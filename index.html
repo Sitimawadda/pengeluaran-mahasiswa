@@ -83,7 +83,7 @@
 
     .btn-image{
       background:#a855f7;
-      display:none;
+      display:inline-block;
     }
 
     .btn-image:hover{
@@ -160,6 +160,13 @@
     .image-wrap{
       text-align:center;
     }
+
+    .info-text{
+      font-size:14px;
+      color:#666;
+      margin-top:8px;
+      line-height:1.6;
+    }
   </style>
 </head>
 
@@ -201,6 +208,10 @@
         onclick="generateImage()">
         Generate AI Image
       </button>
+    </div>
+
+    <div class="info-text">
+      Catatan: klik <b>Analisis AI</b> terlebih dahulu, lalu klik <b>Generate AI Image</b> untuk membuat karakter AI.
     </div>
 
   </div>
@@ -247,9 +258,6 @@
 
   const IMAGE_API =
     "https://pengeluaran-mahasiswa-analyze.vercel.app/api/generate-image";
-    // kalau backend kamu namanya generate-images.js
-    // ubah jadi:
-    // "https://pengeluaran-mahasiswa-analyze.vercel.app/api/generate-images";
 
   function formatRupiah(angka){
     return "Rp " + angka.toLocaleString("id-ID");
@@ -289,7 +297,6 @@
   function resetAISection(){
     hasilAnalisis = "";
     document.getElementById("result").innerText = "Belum dianalisis";
-    document.getElementById("generateBtn").style.display = "none";
 
     const img = document.getElementById("aiImage");
     img.style.display = "none";
@@ -327,6 +334,7 @@
     }
 
     const loading = document.getElementById("loading");
+    loading.innerText = "⏳ AI sedang menganalisis...";
     loading.style.display = "block";
 
     let total = 0;
@@ -385,11 +393,10 @@ ${status}
         document.getElementById("result").innerHTML =
           badge + "<br><br>" + aiData.result;
 
-        document.getElementById("generateBtn").style.display = "inline-block";
-
         const img = document.getElementById("aiImage");
         img.style.display = "none";
         img.src = "";
+
       }else{
         document.getElementById("result").innerText =
           aiData.error || "AI gagal";
@@ -404,12 +411,18 @@ ${status}
   }
 
   async function generateImage(){
+    if(data.length === 0){
+      alert("Tambahkan data pengeluaran terlebih dahulu");
+      return;
+    }
+
     if(!hasilAnalisis){
-      alert("Lakukan analisis terlebih dahulu");
+      alert("Klik Analisis AI terlebih dahulu sebelum generate gambar");
       return;
     }
 
     const loading = document.getElementById("loading");
+    loading.innerText = "🎨 AI sedang membuat gambar...";
     loading.style.display = "block";
 
     try{
@@ -441,7 +454,7 @@ ${status}
 
     }catch(err){
       console.error(err);
-      alert("Tidak bisa konek ke backend");
+      alert("Tidak bisa konek ke backend image");
     }finally{
       loading.style.display = "none";
     }
