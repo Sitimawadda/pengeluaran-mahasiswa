@@ -5,7 +5,6 @@
   <title>Analisis Pengeluaran Mahasiswa</title>
 
   <style>
-
     *{
       box-sizing: border-box;
     }
@@ -126,6 +125,7 @@
       font-size:14px;
       font-weight:bold;
       color:white;
+      margin-bottom:10px;
     }
 
     .hemat{
@@ -157,6 +157,9 @@
       box-shadow:0 6px 18px rgba(0,0,0,0.15);
     }
 
+    .image-wrap{
+      text-align:center;
+    }
   </style>
 </head>
 
@@ -169,7 +172,6 @@
     <h1>Analisis Pengeluaran Mahasiswa</h1>
 
     <div class="form-group">
-
       <input id="nama" placeholder="Nama Pengeluaran">
 
       <select id="kategori">
@@ -182,11 +184,9 @@
       </select>
 
       <input id="jumlah" type="number" placeholder="Jumlah">
-
     </div>
 
     <div class="form-group">
-
       <button class="btn-add" onclick="tambah()">
         Tambah Data
       </button>
@@ -199,34 +199,25 @@
         id="generateBtn"
         class="btn-image"
         onclick="generateImage()">
-
         Generate AI Image
       </button>
-
     </div>
 
   </div>
 
   <div class="card">
-
     <h2>Total Pengeluaran</h2>
-
     <h3 id="total">Rp 0</h3>
-
   </div>
 
   <div class="card">
-
     <h2>Data Pengeluaran</h2>
-
     <div id="list">
       Belum ada data
     </div>
-
   </div>
 
   <div class="card">
-
     <h2>Hasil Analisis AI</h2>
 
     <div id="result">
@@ -236,133 +227,127 @@
     <div id="loading">
       ⏳ AI sedang bekerja...
     </div>
-
   </div>
 
   <div class="card">
-
     <h2>AI Character</h2>
-
-    <img id="aiImage">
-
+    <div class="image-wrap">
+      <img id="aiImage" alt="AI Character">
+    </div>
   </div>
 
 </div>
 
 <script>
+  let data = [];
+  let hasilAnalisis = "";
 
-let data = [];
-let hasilAnalisis = "";
+  const ANALYZE_API =
+    "https://pengeluaran-mahasiswa-analyze.vercel.app/api/analyze";
 
-function formatRupiah(angka){
-  return "Rp " + angka.toLocaleString("id-ID");
-}
+  const IMAGE_API =
+    "https://pengeluaran-mahasiswa-analyze.vercel.app/api/generate-image";
+    // kalau backend kamu namanya generate-images.js
+    // ubah jadi:
+    // "https://pengeluaran-mahasiswa-analyze.vercel.app/api/generate-images";
 
-function render(){
-
-  let total = 0;
-
-  if(data.length === 0){
-
-    document.getElementById("list").innerHTML =
-      "Belum ada data";
-
-    document.getElementById("total").innerText =
-      "Rp 0";
-
-    return;
+  function formatRupiah(angka){
+    return "Rp " + angka.toLocaleString("id-ID");
   }
 
-  let html =
-    "<table><tr><th>No</th><th>Nama</th><th>Kategori</th><th>Jumlah</th></tr>";
+  function render(){
+    let total = 0;
 
-  data.forEach((d,i)=>{
-
-    total += d.jumlah;
-
-    html += `
-      <tr>
-        <td>${i+1}</td>
-        <td>${d.nama}</td>
-        <td>${d.kategori}</td>
-        <td>${formatRupiah(d.jumlah)}</td>
-      </tr>
-    `;
-  });
-
-  html += "</table>";
-
-  document.getElementById("list").innerHTML =
-    html;
-
-  document.getElementById("total").innerText =
-    formatRupiah(total);
-}
-
-function tambah(){
-
-  const nama =
-    document.getElementById("nama").value.trim();
-
-  const kategori =
-    document.getElementById("kategori").value;
-
-  const jumlah =
-    Number(document.getElementById("jumlah").value);
-
-  if(!nama || !kategori || !jumlah){
-
-    alert("Isi semua data");
-    return;
-  }
-
-  data.push({
-    nama,
-    kategori,
-    jumlah
-  });
-
-  document.getElementById("nama").value = "";
-  document.getElementById("kategori").value = "";
-  document.getElementById("jumlah").value = "";
-
-  render();
-}
-
-async function analisis(){
-
-  if(data.length === 0){
-
-    alert("Belum ada data");
-    return;
-  }
-
-  const loading =
-    document.getElementById("loading");
-
-  loading.style.display = "block";
-
-  let total = 0;
-  let terbesar = 0;
-  let kategoriTerbesar = "";
-
-  data.forEach(d=>{
-
-    total += d.jumlah;
-
-    if(d.jumlah > terbesar){
-
-      terbesar = d.jumlah;
-      kategoriTerbesar = d.kategori;
+    if(data.length === 0){
+      document.getElementById("list").innerHTML = "Belum ada data";
+      document.getElementById("total").innerText = "Rp 0";
+      return;
     }
-  });
 
-  const status =
-    total < 50000 ? "Hemat"
-    : total <= 100000 ? "Sedang"
-    : "Boros";
+    let html =
+      "<table><tr><th>No</th><th>Nama</th><th>Kategori</th><th>Jumlah</th></tr>";
 
-  hasilAnalisis = `
+    data.forEach((d,i)=>{
+      total += d.jumlah;
+
+      html += `
+        <tr>
+          <td>${i+1}</td>
+          <td>${d.nama}</td>
+          <td>${d.kategori}</td>
+          <td>${formatRupiah(d.jumlah)}</td>
+        </tr>
+      `;
+    });
+
+    html += "</table>";
+
+    document.getElementById("list").innerHTML = html;
+    document.getElementById("total").innerText = formatRupiah(total);
+  }
+
+  function resetAISection(){
+    hasilAnalisis = "";
+    document.getElementById("result").innerText = "Belum dianalisis";
+    document.getElementById("generateBtn").style.display = "none";
+
+    const img = document.getElementById("aiImage");
+    img.style.display = "none";
+    img.src = "";
+  }
+
+  function tambah(){
+    const nama = document.getElementById("nama").value.trim();
+    const kategori = document.getElementById("kategori").value;
+    const jumlah = Number(document.getElementById("jumlah").value);
+
+    if(!nama || !kategori || !jumlah){
+      alert("Isi semua data");
+      return;
+    }
+
+    data.push({
+      nama,
+      kategori,
+      jumlah
+    });
+
+    document.getElementById("nama").value = "";
+    document.getElementById("kategori").value = "";
+    document.getElementById("jumlah").value = "";
+
+    resetAISection();
+    render();
+  }
+
+  async function analisis(){
+    if(data.length === 0){
+      alert("Belum ada data");
+      return;
+    }
+
+    const loading = document.getElementById("loading");
+    loading.style.display = "block";
+
+    let total = 0;
+    let terbesar = 0;
+    let kategoriTerbesar = "";
+
+    data.forEach(d=>{
+      total += d.jumlah;
+
+      if(d.jumlah > terbesar){
+        terbesar = d.jumlah;
+        kategoriTerbesar = d.kategori;
+      }
+    });
+
+    const status =
+      total < 50000 ? "Hemat"
+      : total <= 100000 ? "Sedang"
+      : "Boros";
+
+    hasilAnalisis = `
 Total Pengeluaran: ${formatRupiah(total)}
 
 Kategori Terbesar:
@@ -371,134 +356,98 @@ ${kategoriTerbesar}
 
 Status:
 ${status}
-`;
+    `.trim();
 
-  try{
-
-    const res = await fetch(
-      "https://pengeluaran-mahasiswa-analyze.vercel.app/api/analyze",
-      {
+    try{
+      const res = await fetch(ANALYZE_API, {
         method:"POST",
-
         headers:{
           "Content-Type":"application/json"
         },
-
         body:JSON.stringify({
           activities: hasilAnalisis
         })
+      });
+
+      const aiData = await res.json();
+
+      if(aiData.result){
+        let badge = "";
+
+        if(status === "Hemat"){
+          badge = `<span class="badge hemat">Hemat</span>`;
+        }else if(status === "Sedang"){
+          badge = `<span class="badge sedang">Sedang</span>`;
+        }else{
+          badge = `<span class="badge boros">Boros</span>`;
+        }
+
+        document.getElementById("result").innerHTML =
+          badge + "<br><br>" + aiData.result;
+
+        document.getElementById("generateBtn").style.display = "inline-block";
+
+        const img = document.getElementById("aiImage");
+        img.style.display = "none";
+        img.src = "";
+      }else{
+        document.getElementById("result").innerText =
+          aiData.error || "AI gagal";
       }
-    );
 
-    const aiData = await res.json();
+    }catch(err){
+      console.error(err);
+      alert("Tidak bisa konek ke backend");
+    }finally{
+      loading.style.display = "none";
+    }
+  }
 
-    if(aiData.result){
-
-      let badge = "";
-
-      if(status === "Hemat"){
-        badge =
-          `<span class="badge hemat">Hemat</span>`;
-      }
-
-      else if(status === "Sedang"){
-        badge =
-          `<span class="badge sedang">Sedang</span>`;
-      }
-
-      else{
-        badge =
-          `<span class="badge boros">Boros</span>`;
-      }
-
-      document.getElementById("result").innerHTML =
-        badge + "<br><br>" + aiData.result;
-
-      // tampilkan tombol generate image
-      document.getElementById("generateBtn")
-        .style.display = "inline-block";
-
-    }else{
-
-      document.getElementById("result").innerText =
-        aiData.error || "AI gagal";
+  async function generateImage(){
+    if(!hasilAnalisis){
+      alert("Lakukan analisis terlebih dahulu");
+      return;
     }
 
-  }catch(err){
+    const loading = document.getElementById("loading");
+    loading.style.display = "block";
 
-    console.error(err);
-
-    alert("Tidak bisa konek ke backend");
-
-  }finally{
-
-    loading.style.display = "none";
-  }
-}
-
-async function generateImage(){
-
-  if(!hasilAnalisis){
-
-    alert("Lakukan analisis terlebih dahulu");
-    return;
-  }
-
-  const loading =
-    document.getElementById("loading");
-
-  loading.style.display = "block";
-
-  try{
-
-    const res = await fetch(
-      "https://pengeluaran-mahasiswa-analyze.vercel.app/api/generate-image",
-      {
+    try{
+      const res = await fetch(IMAGE_API, {
         method:"POST",
-
         headers:{
           "Content-Type":"application/json"
         },
-
         body:JSON.stringify({
-          expenses: hasilAnalisis
+          activities: hasilAnalisis
         })
+      });
+
+      const imageData = await res.json();
+
+      if(imageData.image){
+        const img = document.getElementById("aiImage");
+
+        if(String(imageData.image).startsWith("data:image")){
+          img.src = imageData.image;
+        }else{
+          img.src = `data:image/png;base64,${imageData.image}`;
+        }
+
+        img.style.display = "block";
+      }else{
+        alert(imageData.error || "Gagal generate gambar");
       }
-    );
 
-    const imageData = await res.json();
-
-    if(imageData.image){
-
-      const img =
-        document.getElementById("aiImage");
-
-      img.src = imageData.image;
-
-      img.style.display = "block";
-
-    }else{
-
-      alert(
-        imageData.error ||
-        "Gagal generate gambar"
-      );
+    }catch(err){
+      console.error(err);
+      alert("Tidak bisa konek ke backend");
+    }finally{
+      loading.style.display = "none";
     }
-
-  }catch(err){
-
-    console.error(err);
-
-    alert("Tidak bisa konek ke backend");
-
-  }finally{
-
-    loading.style.display = "none";
   }
-}
 
-render();
-
+  render();
 </script>
 
 </body>
